@@ -280,7 +280,7 @@ Here are a few tips on how to get used to Elastic:
 - [ ] cat recovery
 - [ ] cat repositories
 - [ ] cat thread pool
-- [ ] cat shards
+- [X] cat shards
 - [ ] cat segments
 - [ ] cat snapshots
 - [ ] cat templates
