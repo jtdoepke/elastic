@@ -11,7 +11,7 @@ import (
 )
 
 func TestClusterState(t *testing.T) {
-	client := setupTestClientAndCreateIndex(t)
+	client := setupTestClientAndCreateIndex(t, SetDecoder(&strictDecoder{}))
 
 	// Get cluster state
 	res, err := client.ClusterState().Index("_all").Metric("_all").Pretty(true).Do(context.TODO())

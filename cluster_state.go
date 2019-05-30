@@ -185,6 +185,7 @@ func (s *ClusterStateService) Do(ctx context.Context) (*ClusterStateResponse, er
 // ClusterStateResponse is the response of ClusterStateService.Do.
 type ClusterStateResponse struct {
 	ClusterName  string                    `json:"cluster_name"`
+	ClusterUUID  string                    `json:"cluster_uuid"`
 	Version      int64                     `json:"version"`
 	StateUUID    string                    `json:"state_uuid"`
 	MasterNode   string                    `json:"master_node"`
@@ -209,10 +210,12 @@ type clusterBlock struct {
 }
 
 type clusterStateMetadata struct {
-	ClusterUUID  string                            `json:"cluster_uuid"`
-	Templates    map[string]*indexTemplateMetaData `json:"templates"` // template name -> index template metadata
-	Indices      map[string]*indexMetaData         `json:"indices"`   // index name _> meta data
-	RoutingTable struct {
+	ClusterUUID         string                            `json:"cluster_uuid"`
+	ClusterCoordination *clusterStateMetadataCoordination `json:"cluster_coordination"`
+	Templates           map[string]*indexTemplateMetaData `json:"templates"` // template name -> index template metadata
+	IndexGraveyard      *indexGraveyard                   `json:"index-graveyard"`
+	Indices             map[string]*indexMetaData         `json:"indices"` // index name _> meta data
+	RoutingTable        struct {
 		Indices map[string]*indexRoutingTable `json:"indices"` // index name -> routing table
 	} `json:"routing_table"`
 	RoutingNodes struct {
@@ -222,8 +225,30 @@ type clusterStateMetadata struct {
 	Customs map[string]interface{} `json:"customs"`
 }
 
+type indexGraveyard struct {
+	Tombstones []*indexTombstone `json:"tombstones"`
+}
+
+type indexTombstone struct {
+	DeleteDateInMillis int64                `json:"delete_date_in_millis"`
+	Index              *indexTombstoneIndex `json:"index"`
+}
+
+type indexTombstoneIndex struct {
+	IndexName string `json:"index_name"`
+	IndexUUID string `json:"index_uuid"`
+}
+
+type clusterStateMetadataCoordination struct {
+	LastAcceptedConfig     []string `json:"last_accepted_config"`
+	LastCommittedConfig    []string `json:"last_committed_config"`
+	Term                   int      `json:"term"`
+	VotingConfigExclusions []string `json:"voting_config_exclusions"`
+}
+
 type discoveryNode struct {
 	Name             string                 `json:"name"`              // server name, e.g. "es1"
+	EphemeralID      string                 `json:"ephemeral_id"`      // e.g. "smn9-shTRhCc18SUlC-JbA"
 	TransportAddress string                 `json:"transport_address"` // e.g. inet[/1.2.3.4:9300]
 	Attributes       map[string]interface{} `json:"attributes"`        // e.g. { "data": true, "master": true }
 }
@@ -246,10 +271,12 @@ type indexTemplateMetaData struct {
 }
 
 type indexMetaData struct {
-	State    string                 `json:"state"`
-	Settings map[string]interface{} `json:"settings"`
-	Mappings map[string]interface{} `json:"mappings"`
-	Aliases  []string               `json:"aliases"` // e.g. [ "alias1", "alias2" ]
+	State             string                 `json:"state"`
+	InSyncAllocations map[string][]string    `json:"in_sync_allocations"`
+	Settings          map[string]interface{} `json:"settings"`
+	Mappings          map[string]interface{} `json:"mappings"`
+	Aliases           []string               `json:"aliases"` // e.g. [ "alias1", "alias2" ]
+	PrimaryTerms      map[string]int         `json:"primary_terms"`
 }
 
 type indexRoutingTable struct {
